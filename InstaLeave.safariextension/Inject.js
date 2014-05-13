@@ -1,9 +1,27 @@
 // Copyright © 2013 Many Tricks (When in doubt, consider this MIT-licensed)
 
-var theBeforeUnloadFunction = window.onbeforeunload;
-if (theBeforeUnloadFunction) {
-	window.onbeforeunload = function (theEvent) {
-		theBeforeUnloadFunction(theEvent);
-		return null;
-	};
+var canCallOriginalBeforeUnloadFunction = true;
+
+function silenceBeforeUnloadFunction(callBeforeUnloadFunction) {
+	var theOriginalBeforeUnloadFunction = window.onbeforeunload;
+	if (theOriginalBeforeUnloadFunction) {
+		var theReplacementBeforeUnloadFunction = function (theEvent) {
+			if (canCallOriginalBeforeUnloadFunction) {
+				theOriginalBeforeUnloadFunction(theEvent);
+				canCallOriginalBeforeUnloadFunction = false;
+			}
+			return null;
+		};
+		if (callBeforeUnloadFunction) {
+			theReplacementBeforeUnloadFunction();
+		} else {
+			window.onbeforeunload = theReplacementBeforeUnloadFunction;
+		}
+	}
 }
+
+silenceBeforeUnloadFunction(false);
+window.addEventListener('beforeunload', function (theEvent) {
+	silenceBeforeUnloadFunction(true);
+	theEvent.stopPropagation();
+}, true);
